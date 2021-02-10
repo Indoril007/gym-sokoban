@@ -16,6 +16,17 @@ class SokobanEnv1(SokobanEnv):
         )
 
 
+class SokobanEnvTinyObs(SokobanEnv):
+    metadata = {
+        'render.modes': ['human', 'rgb_array', 'tiny_human', 'tiny_rgb_array'],
+    }
+
+    def __init__(self):
+        super(SokobanEnvTinyObs, self).__init__(
+            num_boxes=3, max_steps=200, observation_mode='tiny_rgb_array'
+        )
+
+
 class SokobanEnv2(SokobanEnv):
     metadata = {
         'render.modes': ['human', 'rgb_array', 'tiny_human', 'tiny_rgb_array'],

@@ -4,6 +4,10 @@
     "entry_point": "gym_sokoban.envs:SokobanEnv1"
   },
   {
+    "id": "SokobanTinyObs-v0",
+    "entry_point": "gym_sokoban.envs:SokobanEnvTinyObs"
+  },
+  {
     "id": "Sokoban-v1",
     "entry_point": "gym_sokoban.envs:SokobanEnv"
   },

@@ -17,7 +17,10 @@ class SokobanEnv(gym.Env):
                  max_steps=120,
                  num_boxes=4,
                  num_gen_steps=None,
-                 reset=True):
+                 reset=True,
+                 observation_mode='rgb_array'):
+
+        assert observation_mode in ['rgb_array', 'tiny_rgb_array', 'raw']
 
         # General Configuration
         self.dim_room = dim_room
@@ -27,6 +30,7 @@ class SokobanEnv(gym.Env):
             self.num_gen_steps = num_gen_steps
 
         self.num_boxes = num_boxes
+        self.observation_mode = observation_mode
         self.boxes_on_target = 0
 
         # Penalties and Rewards
@@ -51,9 +55,8 @@ class SokobanEnv(gym.Env):
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
 
-    def step(self, action, observation_mode='rgb_array'):
+    def step(self, action):
         assert action in ACTION_LOOKUP
-        assert observation_mode in ['rgb_array', 'tiny_rgb_array', 'raw']
 
         self.num_env_steps += 1
 
@@ -73,11 +76,10 @@ class SokobanEnv(gym.Env):
             moved_player = self._move(action)
 
         self._calc_reward()
-        
         done = self._check_if_done()
 
         # Convert the observation to RGB frame
-        observation = self.render(mode=observation_mode)
+        observation = self.render(mode=self.observation_mode)
 
         info = {
             "action.name": ACTION_LOOKUP[action],
@@ -198,7 +200,7 @@ class SokobanEnv(gym.Env):
     def _check_if_maxsteps(self):
         return (self.max_steps == self.num_env_steps)
 
-    def reset(self, second_player=False, render_mode='rgb_array'):
+    def reset(self, second_player=False):
         try:
             self.room_fixed, self.room_state, self.box_mapping = generate_room(
                 dim=self.dim_room,
@@ -209,14 +211,14 @@ class SokobanEnv(gym.Env):
         except (RuntimeError, RuntimeWarning) as e:
             print("[SOKOBAN] Runtime Error/Warning: {}".format(e))
             print("[SOKOBAN] Retry . . .")
-            return self.reset(second_player=second_player, render_mode=render_mode)
+            return self.reset(second_player=second_player)
 
         self.player_position = np.argwhere(self.room_state == 5)[0]
         self.num_env_steps = 0
         self.reward_last = 0
         self.boxes_on_target = 0
 
-        starting_observation = self.render(render_mode)
+        starting_observation = self.render(mode=self.observation_mode)
         return starting_observation
 
     def render(self, mode='human', close=None, scale=1):
