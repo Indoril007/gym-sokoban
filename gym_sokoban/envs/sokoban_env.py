@@ -1,10 +1,11 @@
 import gym
 from gym.utils import seeding
 from gym.spaces.discrete import Discrete
-from gym.spaces import Box
+from gym.spaces import Box, Dict
 from .room_utils import generate_room
 from .render_utils import room_to_rgb, room_to_tiny_world_rgb
 import numpy as np
+from collections import OrderedDict
 
 
 class SokobanEnv(gym.Env):
@@ -44,12 +45,46 @@ class SokobanEnv(gym.Env):
         self.viewer = None
         self.max_steps = max_steps
         self.action_space = Discrete(len(ACTION_LOOKUP))
-        screen_height, screen_width = (dim_room[0] * 16, dim_room[1] * 16)
-        self.observation_space = Box(low=0, high=255, shape=(screen_height, screen_width, 3), dtype=np.uint8)
+        self.observation_space = self.get_observation_space(observation_mode)
         
         if reset:
             # Initialize Room
             _ = self.reset()
+
+    def get_observation_space(self, observation_mode):
+        if observation_mode == 'rgb_array':
+            screen_height, screen_width = (self.dim_room[0] * 16,
+                                           self.dim_room[1] * 16)
+            observation_space = Box(
+                low=0,
+                high=255,
+                shape=(screen_height, screen_width, 3),
+                dtype=np.uint8)
+        elif observation_mode == 'tiny_rgb_array':
+            screen_height, screen_width = (self.dim_room[0], self.dim_room[1])
+            observation_space = Box(
+                low=0,
+                high=255,
+                shape=(screen_height, screen_width, 3),
+                dtype=np.uint8)
+        elif observation_mode == 'raw':
+            height, width = (self.dim_room[0],
+                             self.dim_room[1])
+            observation_space = Dict(spaces=OrderedDict({
+                'arr_walls': Box(low=0, high=1,
+                                 shape=(height, width), dtype=np.uint8),
+                'arr_goals': Box(low=0, high=1,
+                                 shape=(height, width), dtype=np.uint8),
+                'arr_boxes': Box(low=0, high=1,
+                                 shape=(height, width), dtype=np.uint8),
+                'arr_player': Box(low=0, high=1,
+                                  shape=(height, width), dtype=np.uint8),
+            }))
+        else:
+            raise ValueError("Expected one of ['rgb_array','tiny_rgb_array', "
+                             f"'raw'] but got {observation_mode}")
+        return observation_space
+
 
     def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
@@ -242,7 +277,14 @@ class SokobanEnv(gym.Env):
             arr_boxes = ((self.room_state == 4) + (self.room_state == 3)).view(np.int8)
             arr_player = (self.room_state == 5).view(np.int8)
 
-            return arr_walls, arr_goals, arr_boxes, arr_player
+            out = OrderedDict({
+                'arr_walls': arr_walls,
+                'arr_goals': arr_goals,
+                'arr_boxes': arr_boxes,
+                'arr_player': arr_player,
+            })
+
+            return out
 
         else:
             super(SokobanEnv, self).render(mode=mode)  # just raise an exception
